@@ -1,101 +1,188 @@
-# AngularEvents
+# angular-signal-events
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+This is a port of https://github.com/devagrawal09/solid-events to Angular.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+## Installation
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
-
-## Run tasks
-
-To run the dev server for your app, use:
-
-```sh
-npx nx serve example
+```shell
+npm install angular-signal-events
 ```
 
-To create a production bundle:
+## Event
 
-```sh
-npx nx build example
+Returns an event handler and an event emitter. The handler can execute a callback when the event is emitted.
+
+```typescript
+import {event} from 'angular-signal-events'
+
+@Component()
+export class Counter {
+  greeting = event<string>()
+
+  constructor() {
+    this.greeting.on(greeting => console.log(`Event emitted:`, greeting))
+    
+    this.greeting.emit("Hello World!")
+    // logs "Event emitted: Hello World!"
+  }
+}
 ```
 
-To see all available targets to run for a project, run:
+## Transformation
+The handler can return a new handler with the value returned from the callback. This allows chaining transformations.
 
-```sh
-npx nx show project example
+```typescript
+import {event, halt} from 'angular-signal-events'
+
+@Component()
+export class Counter {
+  increment = event<string>()
+
+  constructor() {
+    const onMessage = this.increment.on((delta) => `Increment by ${delta}`)
+    onMessage(message => console.log(`Message emitted:`, message))
+    this.increment.emit(2)
+    // logs "Message emitted: Increment by 2"
+  }
+}
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+## Disposal
+Handlers that are called inside a component are automatically cleaned up with the component, so no manual bookkeeping is necessary.
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## Halting
+Event propagation can be stopped at any point using halt()
 
-## Add new projects
+```typescript
+import {event} from 'angular-signal-events'
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
+@Component()
+export class Counter {
+  increment = event<string>()
 
-Use the plugin's generator to create new projects.
+  constructor() {
+    const onValidIncrement = this.increment.on(delta => delta < 1 ? halt() : delta)
+    const onMessage = this.increment.on((delta) => `Increment by ${delta}`)
 
-To generate a new application, use:
+    onMessage(message => console.log(`Message emitted:`, message))
 
-```sh
-npx nx g @nx/angular:app demo
+    this.increment.emit(2)
+    // logs "Message emitted: Increment by 2"
+
+    this.increment.emit(0)
+    // Doesn't log anything
+  }
+}
+```
+halt() returns a never, so typescript correctly infers the return type of the handler.
+
+## Async Events
+
+If you return a promise from an event callback, the resulting event will wait to emit until the promise resolves. In other words, promises are automatically flattened by events.
+
+```typescript
+import {Router} from "@angular/router";
+import {HttpClient} from "@angular/common/http";
+import {event} from 'angular-signal-events'
+import {firstValueFrom} from "rxjs";
+
+@Component()
+export class BoardEditorComponent {
+  private http = inject(HttpClient);
+  private router = inject(Router);
+  
+  createBoard = event<BoardData>();
+
+  constructor() {
+    const onBoardCreated = this.createBoard.on((boardData) => createBoard(boardData));
+    onBoardCreated(boardId => this.router.navigate(['board', boardId]))
+  }
+
+  createBoard(boardData: BoardData) {
+    return firstValueFrom(this.http.post<string>('...'));
+  }
+}
 ```
 
-To generate a new library, use:
+## Subject
 
-```sh
-npx nx g @nx/angular:lib mylib
+Events can be used to derive state using Subjects. A Subject is a signal that can be derived from event handlers.
+
+```typescript
+import {event, subject} from 'angular-signal-events'
+
+@Component({
+  template: `
+    <div>Count: {{count()}}</div>
+    <button (click)="increment.emit(1)">+</button>
+    <button (click)="reset.emit()">reset</button>
+  `
+})
+export class Counter {
+  increment = event<string>()
+  reset = event<void>()
+  
+  count = subject(
+    0,
+    this.increment.on(delta => currentCount => currentCount + delta),
+    this.reset.on(() => 0)
+  )
+}
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+To update the value of a subject, event handlers can return a value (like `reset.on`), or a function that transforms the current value (like `increment.on`).
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## Async Subject
 
-## Set up CI!
+TBD. Angular doesn't have an async reactive primitive. ([yet](https://github.com/angular/angular/pull/58255/files))
 
-### Step 1
+## Topic
 
-To connect to Nx Cloud, run the following command:
+A topic combines multiple events into one. This is simply a more convenient way to merge events than manually iterating through them.
 
-```sh
-npx nx connect
+```typescript
+@Component()
+export class Counter {
+  increment = event<number>()
+  decrement = event<number>()
+
+  onMessage = topic(
+    this.increment.on((delta) => `Increment by ${delta}`),
+    this.decrement.on((delta) => `Decrement by ${delta}`)
+  );
+
+  constructor() {
+    this.onMessage(message => console.log(`Message emitted:`, message))
+
+    this.increment.emit(2)
+    // logs "Message emitted: Increment by 2"
+    this.decrement.emit(1)
+    // logs "Message emitted: Decrement by 1"
+  }
+}
 ```
 
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
+## Partition
 
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+A partition splits an event based on a conditional. This is simply a more convenient way to conditionally split events than using halt().
 
-### Step 2
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
+```typescript
+@Component()
+export class Counter {
+  increment = event<number>()
+  incrementValidation = partition(
+    this.increment.on,
+    delta => delta > 0
+  )
+  
+  constructor() {
+    this.incrementValidation.handleTrue(delta => console.log(`Valid increment by ${delta}`))
+    this.incrementValidation.handleFalse(() => console.log(`Please use a number greater than 0`))    
+  }
+}
 ```
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 
-## Install Nx Console
+## Important Note
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/getting-started/tutorials/angular-monorepo-tutorial?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+This library is primarily intended for experimental purposes, exploring potential smoother interactions between signals and events. For production use, RxJS is recommended as the preferred choice.
