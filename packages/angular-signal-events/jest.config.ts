@@ -1,8 +1,8 @@
 export default {
-  displayName: 'angular-events',
+  displayName: 'angular-signal-events',
   preset: '../../jest.preset.js',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
-  coverageDirectory: '../../coverage/packages/angular-events',
+  coverageDirectory: '../../coverage/packages/angular-signal-events',
   transform: {
     '^.+\\.(ts|mjs|js|html)$': [
       'jest-preset-angular',

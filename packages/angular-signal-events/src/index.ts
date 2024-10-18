@@ -1,5 +1,13 @@
-import {Observable, Subject} from "rxjs";
-import {assertInInjectionContext, computed, DestroyRef, inject, Injector, signal, Signal} from "@angular/core";
+import { Observable, Subject } from 'rxjs';
+import {
+  assertInInjectionContext,
+  computed,
+  DestroyRef,
+  inject,
+  Injector,
+  signal,
+  Signal,
+} from '@angular/core';
 
 export type Handler<E> = (<O>(
   transform: (e: E) => Promise<O> | O
@@ -13,8 +21,8 @@ export class HaltError extends Error {
   constructor(public reason?: string) {
     super(
       reason
-        ? "Event propagation halted: " + reason
-        : "Event propagation halted"
+        ? 'Event propagation halted: ' + reason
+        : 'Event propagation halted'
     );
   }
 }
@@ -44,20 +52,19 @@ function makeHandler<E>($: Observable<E>, injector: Injector): Handler<E> {
   return handler;
 }
 
-
 export interface AngularEvent<E> {
   on: Handler<E>;
-  emit: Emitter<E>
+  emit: Emitter<E>;
 }
 
 export function event<E>(_injector?: Injector): AngularEvent<E> {
-  _injector || assertInInjectionContext(event)
-  const injector = _injector ?? inject(Injector)
+  _injector || assertInInjectionContext(event);
+  const injector = _injector ?? inject(Injector);
   const $ = new Subject<E>();
   return {
     on: makeHandler($, injector),
     emit: (e) => $.next(e),
-  } as const
+  } as const;
 }
 
 export function subject<T>(
@@ -80,24 +87,23 @@ export function subject<T>(
   init: (() => T) | T | undefined,
   ...events: Array<Handler<T | ((prev: T) => T)>>
 ) {
-  if (typeof init === "function") {
-    const comp = computed(() =>
-      subject((init as () => T)(), ...events)
-    );
+  if (typeof init === 'function') {
+    const comp = computed(() => subject((init as () => T)(), ...events));
     return () => comp()();
   } else {
-    const sig = signal(init)
-    events.forEach((h) => h(v => {
-      if (typeof v === "function") {
-        sig.update(v as (value: T | undefined) => T | undefined)
-      } else {
-        sig.set(v as T);
-      }
-    }));
+    const sig = signal(init);
+    events.forEach((h) =>
+      h((v) => {
+        if (typeof v === 'function') {
+          sig.update(v as (value: T | undefined) => T | undefined);
+        } else {
+          sig.set(v as T);
+        }
+      })
+    );
     return sig.asReadonly();
   }
 }
-
 
 export function partition<T>(
   handler: Handler<T>,
@@ -105,12 +111,12 @@ export function partition<T>(
 ) {
   return {
     handleTrue: handler((p) => (predicate(p) ? p : halt())),
-    handleFalse: handler((p) => (predicate(p) ? halt() : p))
+    handleFalse: handler((p) => (predicate(p) ? halt() : p)),
   };
 }
 
 export function topic<T>(...args: Handler<T>[]): Handler<T> {
-  const {on, emit} = event<T>();
+  const { on, emit } = event<T>();
   args.forEach((h) => h(emit));
   return on;
 }
