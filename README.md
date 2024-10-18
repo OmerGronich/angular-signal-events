@@ -2,6 +2,8 @@
 
 This is a port of https://github.com/devagrawal09/solid-events to Angular.
 
+This library is primarily intended for experimental purposes, exploring potential smoother interactions between signals and events. For production use, RxJS is recommended as the preferred choice.
+
 ## Installation
 
 ```shell
@@ -181,8 +183,3 @@ export class Counter {
   }
 }
 ```
-
-
-## Important Note
-
-This library is primarily intended for experimental purposes, exploring potential smoother interactions between signals and events. For production use, RxJS is recommended as the preferred choice.
