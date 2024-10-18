@@ -97,3 +97,20 @@ export function subject<T>(
     return sig.asReadonly();
   }
 }
+
+
+export function partition<T>(
+  handler: Handler<T>,
+  predicate: (arg: T) => boolean
+) {
+  return {
+    handleTrue: handler((p) => (predicate(p) ? p : halt())),
+    handleFalse: handler((p) => (predicate(p) ? halt() : p))
+  };
+}
+
+export function topic<T>(...args: Handler<T>[]): Handler<T> {
+  const {on, emit} = event<T>();
+  args.forEach((h) => h(emit));
+  return on;
+}
