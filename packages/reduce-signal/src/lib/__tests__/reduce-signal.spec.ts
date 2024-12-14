@@ -1,8 +1,9 @@
+import { DestroyRef, Injector } from '@angular/core';
+import { fakeAsync, TestBed } from '@angular/core/testing';
+
 import { reduceSignal } from '../reduce-signal';
 import { event } from '../event';
 import { when } from '../when';
-import { fakeAsync, TestBed } from '@angular/core/testing';
-import { DestroyRef, Injector } from '@angular/core';
 
 describe(reduceSignal.name, () => {
   it('should initialize with the provided initial state', () => {

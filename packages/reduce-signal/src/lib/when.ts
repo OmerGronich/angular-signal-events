@@ -1,7 +1,7 @@
-import { Event } from './event';
+import { Subscribable } from './subscribable';
 
 export function when<T>(
-  event: Event<T>,
+  event: Subscribable<T>,
   projectionFn?: (payload: T, previousValue: T) => T
 ) {
   return {

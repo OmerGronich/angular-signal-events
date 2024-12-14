@@ -1,12 +1,12 @@
+import { Cleanup } from './subscribable';
+
 export class Subscription {
   private cleanupFunctions = new Set<() => void>();
 
-  add(cleanup: () => void): void {
+  add(_cleanup: Cleanup): void {
+    const cleanup = () =>
+      'unsubscribe' in _cleanup ? _cleanup.unsubscribe() : _cleanup();
     this.cleanupFunctions.add(cleanup);
-  }
-
-  remove(cleanup: () => void): void {
-    this.cleanupFunctions.delete(cleanup);
   }
 
   unsubscribe(): void {
