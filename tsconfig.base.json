@@ -15,7 +15,8 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "angular-signal-events": ["packages/angular-signal-events/src/index.ts"]
+      "angular-signal-events": ["packages/angular-signal-events/src/index.ts"],
+      "reduce-signal": ["packages/reduce-signal/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

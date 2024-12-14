@@ -1,0 +1,8 @@
+{
+  "name": "reduce-signal",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/core": "^18.2.0"
+  },
+  "sideEffects": false
+}
