@@ -14,6 +14,11 @@ type Event<TPayload, TValue = undefined> = TValue extends undefined
   ? ReturnType<typeof on<TPayload>>
   : ReturnType<typeof on<TPayload, TValue>>;
 
+export function reduceSignal<T>(
+  initialState: T | (() => T)
+): Signal<T>;
+
+
 export function reduceSignal<T, TPayload1>(
   initialState: T | (() => T),
   event1: Event<TPayload1, T> | Event<T>
@@ -168,7 +173,7 @@ export function reduceSignal<
 
 export function reduceSignal<T>(
   initialState: T | (() => T),
-  ...events: Array<Event<any, T>>
+  ...events: Array<Event<unknown, T>>
 ): Signal<T> {
   assertInInjectionContext(reduceSignal);
   const assertedInjector = inject(Injector);
@@ -187,14 +192,16 @@ export function reduceSignal<T>(
           if ('projectionFn' in eventConfig) {
             reduced.set(eventConfig.projectionFn(v, reduced()));
           } else {
-            reduced.set(v);
+            reduced.set(v as T);
           }
         })
       );
     });
-    destroyRef.onDestroy(() => {
-      subscription.unsubscribe();
-    });
+    if(events.length) {
+      destroyRef.onDestroy(() => {
+        subscription.unsubscribe();
+      });
+    }
     return reduced.asReadonly();
   });
 }

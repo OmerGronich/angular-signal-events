@@ -20,6 +20,12 @@ export function on<TPayload, TValue>(
   event: Event<TPayload>,
   projectionFn?: (payload: TPayload, previousValue: TValue) => TValue
 ) {
+  if (!projectionFn) {
+    return {
+      event,
+    };
+  }
+
   return {
     event,
     projectionFn,

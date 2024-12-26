@@ -65,4 +65,74 @@ describe(reduceSignal.name, () => {
     reset();
     expect(result()).toBe(0);
   });
+
+  it('should handle computation as initial state', () => {
+    const increment = event<number>();
+    const decrement = event<number>();
+    const reset = event<void>();
+    const count = TestBed.runInInjectionContext(() =>
+      reduceSignal(
+        0,
+        on(increment, (payload, previous) => previous + payload),
+        on(decrement, (payload, previous) => previous - payload),
+        on(reset, () => 0)
+      )
+    );
+    const doubleCount = TestBed.runInInjectionContext(() =>
+      reduceSignal(() => count() * 2)
+    );
+
+    expect(doubleCount()).toBe(0);
+
+    increment(1);
+    increment(1);
+    expect(doubleCount()).toBe(4);
+
+    decrement(1);
+    expect(doubleCount()).toBe(2);
+
+    reset();
+    expect(doubleCount()).toBe(0);
+  });
+
+  it('should handle computation that also receives multiple `on` parameters', () => {
+    const TABS = [
+      ['Tab1', 'Tab2', 'Tab3'],
+      ['FooTab', 'BarTab'],
+      ['OrangeTab', 'AppleTab', 'BananaTab', 'GrapesTab'],
+    ];
+    const listChanged = event<void>();
+    const tabChanged = event<number>();
+
+    const id = TestBed.runInInjectionContext(() =>
+      reduceSignal(
+        2,
+        on(listChanged, (_, i) => (i + 1) % 3)
+      )
+    );
+    const tabs = TestBed.runInInjectionContext(() => reduceSignal(() => TABS[id()]));
+    const selectedTab = TestBed.runInInjectionContext(() =>
+      reduceSignal(
+        () => tabs()[0],
+        on(tabChanged, (index) => tabs()[index])
+      )
+    );
+
+    expect(id()).toBe(2);
+    expect(tabs()).toEqual(TABS[2]);
+    expect(selectedTab()).toBe('OrangeTab');
+
+    listChanged();
+    expect(id()).toBe(0);
+    expect(tabs()).toEqual(TABS[0]);
+    expect(selectedTab()).toBe('Tab1');
+
+    tabChanged(1);
+    expect(selectedTab()).toBe('Tab2');
+
+    listChanged();
+    expect(id()).toBe(1);
+    expect(tabs()).toEqual(TABS[1]);
+    expect(selectedTab()).toBe('FooTab');
+  });
 });
