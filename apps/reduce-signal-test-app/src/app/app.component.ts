@@ -2,10 +2,9 @@ import { Component } from '@angular/core';
 import { RouterLink, RouterOutlet } from '@angular/router';
 
 @Component({
-  standalone: true,
-  imports: [RouterOutlet, RouterLink],
-  selector: 'app-root',
-  template: `
+    imports: [RouterOutlet, RouterLink],
+    selector: 'app-root',
+    template: `
     <ul>
       <li>
         <a routerLink="counter"> Counter </a>
@@ -15,6 +14,6 @@ import { RouterLink, RouterOutlet } from '@angular/router';
       </li>
     </ul>
     <router-outlet />
-  `,
+  `
 })
 export class AppComponent {}
