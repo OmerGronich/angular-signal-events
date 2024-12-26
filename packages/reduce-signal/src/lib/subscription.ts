@@ -1,4 +1,4 @@
-import { Cleanup } from './subscribable';
+export type Cleanup = (() => void) | { unsubscribe: () => void }
 
 export class Subscription {
   private cleanupFunctions = new Set<() => void>();

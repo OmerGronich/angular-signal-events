@@ -17,5 +17,10 @@ export class Event<T> {
 }
 
 export function event<T>() {
-  return new Event<T>();
+  const event = new Event<T>();
+  function emitter(v: T) {
+    event.emit(v);
+  }
+  emitter.subscribe = event.subscribe.bind(event);
+  return emitter;
 }
