@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { event, on, reduceSignal } from 'reduce-signal';
 
 @Component({
@@ -10,8 +10,9 @@ import { event, on, reduceSignal } from 'reduce-signal';
     <button (click)="decrement(1)">-</button>
     <button (click)="reset()">Reset</button>
   `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CounterComponent {
+export default class CounterComponent {
   increment = event<number>();
   decrement = event<number>();
   reset = event<void>();
@@ -20,6 +21,6 @@ export class CounterComponent {
     0,
     on(this.increment, (payload, currentCount) => currentCount + payload),
     on(this.decrement, (payload, currentCount) => currentCount - payload),
-    on(this.reset, () => 0)
+    on(this.reset, () => 0),
   );
 }

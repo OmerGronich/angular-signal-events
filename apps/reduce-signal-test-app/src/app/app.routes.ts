@@ -3,10 +3,14 @@ import { Route } from '@angular/router';
 export const appRoutes: Route[] = [
   {
     path: 'counter',
-    loadComponent: () => import('./examples/counter/counter').then(m => m.CounterComponent)
+    loadComponent: () => import('./examples/counter'),
   },
   {
-    path: 'checkbox-tree',
-    loadComponent: () => import('./examples/checkbox-tree/checkbox-tree').then(m => m.CheckboxTreeComponent)
-  }
+    path: 'tree-checkbox',
+    loadComponent: () => import('./examples/tree-checkbox/tree-checkbox-page'),
+  },
+  {
+    path: 'tabs',
+    loadComponent: () => import('./examples/tabs')
+  },
 ];

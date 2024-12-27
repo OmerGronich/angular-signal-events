@@ -6,6 +6,13 @@ module.exports = [
   ...nx.configs['flat/angular'],
   ...nx.configs['flat/angular-template'],
   {
+    rules: {
+      "@angular-eslint/no-input-rename": "off",
+      "@angular-eslint/component-class-suffix": "off",
+
+    }
+  },
+  {
     files: ['**/*.ts'],
     rules: {
       '@angular-eslint/directive-selector': [
