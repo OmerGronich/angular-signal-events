@@ -1,12 +1,16 @@
 import { Component, ChangeDetectionStrategy } from '@angular/core';
-import { CheckboxTreeComponent, TreeNode } from './tree-checkbox';
+import { TreeCheckbox, TreeNode } from './tree-checkbox';
+import { JsonPipe } from '@angular/common';
 
 @Component({
   selector: 'app-tree-checkbox-page',
   standalone: true,
-  template: ` <app-tree-checkbox [node]="mockTree" [parent]="null" /> `,
+  template: `
+    <app-tree-checkbox [(node)]="mockTree" />
+    <pre>{{mockTree | json}}</pre>
+  `,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CheckboxTreeComponent],
+  imports: [TreeCheckbox, JsonPipe],
 })
 export default class TreeCheckboxPage {
   mockTree: TreeNode = {
