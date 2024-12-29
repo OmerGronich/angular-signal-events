@@ -1,5 +1,7 @@
-import { Component, model } from '@angular/core';
+import { Component, input } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { outputFromObservable, toObservable } from '@angular/core/rxjs-interop';
+import { event, on, reduceSignal } from 'reduce-signal';
 
 export interface TreeNode {
   label: string;
@@ -21,7 +23,7 @@ export interface TreeNode {
               type="checkbox"
               [ngModel]="nodeValue.checked"
               [indeterminate]="nodeValue.indeterminate"
-              (ngModelChange)="onToggle($event)"
+              (ngModelChange)="toggle($event)"
             />
             {{ nodeValue.label }}
           </label>
@@ -30,7 +32,7 @@ export interface TreeNode {
           @for (child of nodeValue.children; track child.label) {
             <app-tree-checkbox
               [node]="child"
-              (nodeChange)="onChildUpdated($event, $index)"
+              (nodeChange)="childChanged({ child: $event, index: $index })"
             />
           }
         </div>
@@ -41,7 +43,7 @@ export interface TreeNode {
           <input
             type="checkbox"
             [ngModel]="nodeValue.checked"
-            (ngModelChange)="onToggle($event)"
+            (ngModelChange)="toggle($event)"
           />
           {{ nodeValue.label }}
         </label>
@@ -52,36 +54,21 @@ export interface TreeNode {
   imports: [FormsModule],
 })
 export class TreeCheckbox {
-  node = model.required<TreeNode>();
+  toggle = event<boolean>();
+  childChanged = event<{ child: TreeNode; index: number }>();
 
-  onToggle(checked: boolean) {
-    this.node.set(this.updateChildren(checked));
-  }
+  _node = input.required<TreeNode>({ alias: 'node' });
 
-  onChildUpdated(child: TreeNode, index: number) {
-    const treeNode = this.node();
-
-    if (!treeNode.children) {
-      return;
-    }
-
-    // Re-evaluate the checked and indeterminate state based on children
-    const children = treeNode.children.map((c, i) => (i === index ? child : c));
-    const allChecked = children.every((child) => child.checked);
-    const noneChecked = children.every(
-      (child) => !child.checked && !child.indeterminate,
-    );
-    const indeterminate = !allChecked && !noneChecked;
-    const newNode = {
-      ...treeNode,
-      children: children,
-      checked: allChecked,
-      indeterminate,
-    };
-
-    // "Emit" the updated node so the parent can react
-    this.node.set(newNode);
-  }
+  node = reduceSignal(
+    () => this._node(),
+    on(this.toggle, (checked) => this.updateChildren(checked)),
+    on(this.childChanged, ({ child, index }, treeNode) => this.calculateStateBasedOnChildren(
+      child,
+      index,
+      treeNode,
+    )),
+  );
+  nodeChange = outputFromObservable(toObservable(this.node));
 
   private updateChildren(checked: boolean, node = this.node()): TreeNode {
     if (!node.children) {
@@ -103,6 +90,26 @@ export class TreeCheckbox {
       checked,
       indeterminate,
       children,
+    };
+  }
+
+  private calculateStateBasedOnChildren(
+    child: TreeNode,
+    index: number,
+    treeNode: TreeNode,
+  ) {
+    const children = treeNode.children as TreeNode[];
+    const updatedChildren = children.map((c, i) => (i === index ? child : c));
+    const allChecked = updatedChildren.every((child) => child.checked);
+    const noneChecked = updatedChildren.every(
+      (child) => !child.checked && !child.indeterminate,
+    );
+    const indeterminate = !allChecked && !noneChecked;
+    return {
+      ...treeNode,
+      children: updatedChildren,
+      checked: allChecked,
+      indeterminate,
     };
   }
 }

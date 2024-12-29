@@ -6,7 +6,7 @@ import { JsonPipe } from '@angular/common';
   selector: 'app-tree-checkbox-page',
   standalone: true,
   template: `
-    <app-tree-checkbox [(node)]="mockTree" />
+    <app-tree-checkbox [node]="mockTree" (nodeChange)="mockTree = $event" />
     <pre>{{mockTree | json}}</pre>
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,
